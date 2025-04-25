@@ -1,8 +1,11 @@
 #include <iostream>
 #include "source/mmip_wrapper.h"
 #include "source/mmip_cpu.h"
+#include "source/mmip_cuda.cuh"
 
-cv::Mat compareResults(cv::Mat (*myOperation)(const cv::Mat&, const cv::Mat&), const cv::Mat &img, const int operation, const cv::Mat &kernel, const std::string &operationName) {
+using namespace CpuOperations;
+
+cv::Mat compareResultsWithCV(cv::Mat (*myOperation)(const cv::Mat&, const cv::Mat&), const cv::Mat &img, const int operation, const cv::Mat &kernel, const std::string &operationName) {
     auto start = std::chrono::high_resolution_clock::now();
     auto myResult = myOperation(img, kernel);
     std::cout << "Custom "<< operationName <<" Time: "
@@ -26,18 +29,62 @@ cv::Mat compareResults(cv::Mat (*myOperation)(const cv::Mat&, const cv::Mat&), c
     return myResult;
 }
 
+cv::Mat compareImplementation(cv::Mat (*cpuOp)(const cv::Mat&, const cv::Mat&), cv::Mat (*gpuOp)(const cv::Mat&, const cv::Mat&), const cv::Mat &img, const cv::Mat &kernel, const std::string &operationName) {
+    auto start = std::chrono::high_resolution_clock::now();
+    auto cpuRes = cpuOp(img, kernel);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    auto cpuTime = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    std::cout << "CPU "<< operationName <<" Time: "
+              << cpuTime
+              << " ms\n";
+
+    start = std::chrono::high_resolution_clock::now();
+    auto gpuRes = gpuOp(img, kernel);
+    end = std::chrono::high_resolution_clock::now();
+    auto gpuTime = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+
+    std::cout << "GPU "<< operationName <<" Time: "
+              << gpuTime
+              << " ms\n";
+
+    std::cout << "Speedup: " << cpuTime / gpuTime << "x" << std::endl;
+
+    int counter = 0;
+    for (int i = 0; i < img.rows; i++) {
+        for (int j = 0; j < img.cols; j++) {
+            if (gpuRes.at<uchar>(i, j) != cpuRes.at<uchar>(i, j)) {
+                counter += 1;
+            }
+        }
+    }
+    std::cout <<"# Errors: " << counter << std::endl;
+
+    return gpuRes;
+}
+
 int main() {
-    auto image = loadImage("images/enrico.png", cv::IMREAD_GRAYSCALE);
+    auto image = loadImage("images/frog.ppm", cv::IMREAD_GRAYSCALE);
     auto kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE , cv::Size(33, 33));
 
-    auto myErode = compareResults(erodeImage, image, cv::MORPH_ERODE, kernel, "Erosion");
-    auto myDilate = compareResults(dilateImage, image, cv::MORPH_DILATE, kernel, "Dilation");
-    auto myOpen = compareResults(openingImage, image, cv::MORPH_OPEN, kernel, "Opening");
-    auto myClose = compareResults(closingImage, image, cv::MORPH_CLOSE, kernel, "Closing");
-
+    cv::Mat myErode;
+    cv::Mat myDilate;
+    cv::Mat myOpen;
+    cv::Mat myClose;
+    if(false){
+        auto myErode = compareResultsWithCV(GpuOperations::erodeImage, image, cv::MORPH_ERODE, kernel, "Erosion");
+        auto myDilate = compareResultsWithCV(dilateImage, image, cv::MORPH_DILATE, kernel, "Dilation");
+        auto myOpen = compareResultsWithCV(openingImage, image, cv::MORPH_OPEN, kernel, "Opening");
+        auto myClose = compareResultsWithCV(closingImage, image, cv::MORPH_CLOSE, kernel, "Closing");
+    } else{
+        auto myErode = compareImplementation(CpuOperations::erodeImage, GpuOperations::erodeImage, image, kernel, "Erosion");
+    }
+    
     displayImage("Original Image", image);
     displayImage("Eroded Image (Custom)", myErode);
+    /*
     displayImage("Dilated Image (Custom)", myDilate);
     displayImage("Opened Image (Custom)", myOpen);
     displayImage("Closed Image (Custom)", myClose);
+    */
 }

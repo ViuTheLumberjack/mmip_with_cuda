@@ -12,4 +12,6 @@ cv::Mat loadImage(const std::string& imagePath, const int flags);
 void displayImage(const std::string& windowName, const cv::Mat& img);
 void saveImage(const std::string& path, const cv::Mat& img);
 
+cv::Mat morphologicalOperation(const cv::Mat& img, const int operation, const cv::Mat& kernel);
+
 #endif //MMIP_WRAPPER_H
