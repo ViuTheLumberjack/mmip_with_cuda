@@ -22,8 +22,6 @@ def plot_speedup(data: pd.DataFrame, title: str, line_label: str, xlabel: str, y
     plt.figure(figsize=(10, 6))
     plt.plot(data["ds"], data["speedup"], marker='o', label=line_label, color='blue')
 
-    ul = data["speedup"].max() + 0.1
-
     additional_lines = kwargs.get('additional_lines')
     if additional_lines:
         for line_info in additional_lines:
@@ -34,15 +32,11 @@ def plot_speedup(data: pd.DataFrame, title: str, line_label: str, xlabel: str, y
             if df is not None and label is not None and "ds" in df.columns and "speedup" in df.columns:
                 plt.plot(df["ds"], df["speedup"], marker=marker, label=label, color=color)
 
-            if df["speedup"].max() > ul:
-                ul = df["speedup"].max() + 0.1
-
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.grid(True)
     plt.xticks(data["ds"])  # Ensure all ds values are shown on x-axis
-    plt.yticks(np.arange(0, ul, 1))  # Adjust y-ticks for better visibility
     plt.tight_layout()
     plt.legend()
     plt.savefig(save_path)
