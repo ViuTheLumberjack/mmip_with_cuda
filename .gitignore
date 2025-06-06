@@ -1,5 +1,8 @@
+
 cmake-build-debug
 cmake-build-release
 .idea
 images
 .vscode
+result_plotter/*
+!result_plotter/plotter.py
