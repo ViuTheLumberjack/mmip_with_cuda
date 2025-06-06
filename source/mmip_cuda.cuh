@@ -9,10 +9,16 @@
 #include <opencv2/opencv.hpp>
 
 namespace GpuOperations{
-    cv::Mat erodeImage(const cv::Mat& img, const cv::Mat& kernel);
-    cv::Mat dilateImage(const cv::Mat& img, const cv::Mat& kernel);
-    cv::Mat openingImage(const cv::Mat& img, const cv::Mat& kernel);
-    cv::Mat closingImage(const cv::Mat& img, const cv::Mat& kernel);
+    enum Implementation{
+        Base,
+        Halo,
+        Extern
+    };
+
+    cv::Mat erodeImage(const Implementation i, const cv::Mat& img, const cv::Mat& kernel);
+    cv::Mat dilateImage(const Implementation i, const cv::Mat& img, const cv::Mat& kernel);
+    cv::Mat openingImage(const Implementation i, const cv::Mat& img, const cv::Mat& kernel);
+    cv::Mat closingImage(const Implementation i, const cv::Mat& img, const cv::Mat& kernel);
 }
 
 #endif //MMIP_CUDA_CUH

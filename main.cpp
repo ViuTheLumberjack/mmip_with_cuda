@@ -3,8 +3,6 @@
 #include "source/mmip_cpu.h"
 #include "source/mmip_cuda.cuh"
 
-using namespace CpuOperations;
-
 cv::Mat compareResultsWithCV(cv::Mat (*myOperation)(const cv::Mat&, const cv::Mat&), const cv::Mat &img, const int operation, const cv::Mat &kernel, const std::string &operationName) {
     auto start = std::chrono::high_resolution_clock::now();
     auto myResult = myOperation(img, kernel);
@@ -29,7 +27,7 @@ cv::Mat compareResultsWithCV(cv::Mat (*myOperation)(const cv::Mat&, const cv::Ma
     return myResult;
 }
 
-cv::Mat compareImplementation(cv::Mat (*cpuOp)(const cv::Mat&, const cv::Mat&), cv::Mat (*gpuOp)(const cv::Mat&, const cv::Mat&), const cv::Mat &img, const cv::Mat &kernel, const std::string &operationName) {
+cv::Mat compareImplementation(cv::Mat (*cpuOp)(const cv::Mat&, const cv::Mat&), cv::Mat (*gpuOp)(const GpuOperations::Implementation i, const cv::Mat&, const cv::Mat&), const GpuOperations::Implementation i, const cv::Mat &img, const cv::Mat &kernel, const std::string &operationName) {
     auto start = std::chrono::high_resolution_clock::now();
     auto cpuRes = cpuOp(img, kernel);
     auto end = std::chrono::high_resolution_clock::now();
@@ -40,7 +38,7 @@ cv::Mat compareImplementation(cv::Mat (*cpuOp)(const cv::Mat&, const cv::Mat&), 
               << " ms\n";
 
     start = std::chrono::high_resolution_clock::now();
-    auto gpuRes = gpuOp(img, kernel);
+    auto gpuRes = gpuOp(i, img, kernel);
     end = std::chrono::high_resolution_clock::now();
     auto gpuTime = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
@@ -48,7 +46,7 @@ cv::Mat compareImplementation(cv::Mat (*cpuOp)(const cv::Mat&, const cv::Mat&), 
               << gpuTime
               << " ms\n";
 
-    std::cout << "Speedup: " << cpuTime / gpuTime << "x" << std::endl;
+    std::cout << "Speedup: " << (float)cpuTime / gpuTime << "x" << std::endl;
 
     int counter = 0;
     for (int i = 0; i < img.rows; i++) {
@@ -64,20 +62,22 @@ cv::Mat compareImplementation(cv::Mat (*cpuOp)(const cv::Mat&, const cv::Mat&), 
 }
 
 int main() {
-    auto image = loadImage("images/frog.ppm", cv::IMREAD_GRAYSCALE);
+    auto image = loadImage("images/spiaggia.jpg", cv::IMREAD_GRAYSCALE);
     auto kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE , cv::Size(33, 33));
 
+    GpuOperations::Implementation implementation = GpuOperations::Implementation::Extern;
     cv::Mat myErode;
     cv::Mat myDilate;
     cv::Mat myOpen;
     cv::Mat myClose;
+    
     if(false){
-        auto myErode = compareResultsWithCV(GpuOperations::erodeImage, image, cv::MORPH_ERODE, kernel, "Erosion");
-        auto myDilate = compareResultsWithCV(dilateImage, image, cv::MORPH_DILATE, kernel, "Dilation");
-        auto myOpen = compareResultsWithCV(openingImage, image, cv::MORPH_OPEN, kernel, "Opening");
-        auto myClose = compareResultsWithCV(closingImage, image, cv::MORPH_CLOSE, kernel, "Closing");
+        myErode = compareResultsWithCV(CpuOperations::erodeImage, image, cv::MORPH_ERODE, kernel, "Erosion");
+        myDilate = compareResultsWithCV(CpuOperations::dilateImage, image, cv::MORPH_DILATE, kernel, "Dilation");
+        myOpen = compareResultsWithCV(CpuOperations::openingImage, image, cv::MORPH_OPEN, kernel, "Opening");
+        myClose = compareResultsWithCV(CpuOperations::closingImage, image, cv::MORPH_CLOSE, kernel, "Closing");
     } else{
-        auto myErode = compareImplementation(CpuOperations::erodeImage, GpuOperations::erodeImage, image, kernel, "Erosion");
+        myErode = compareImplementation(CpuOperations::erodeImage, GpuOperations::erodeImage, implementation, image, kernel, "Erosion");
     }
     
     displayImage("Original Image", image);
