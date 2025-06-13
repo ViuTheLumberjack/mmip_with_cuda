@@ -383,9 +383,11 @@ namespace GpuOperations
         size_t imgByte = img.rows * img.cols * sizeof(uchar);
         size_t kernelBytes = kernel.rows * kernel.cols * sizeof(uchar);
 
+        cv::Mat output_mat(img.rows, img.cols, CV_8UC1);
+
         const uchar *h_input = img.ptr();
         const uchar *h_kernel = kernel.ptr();
-        uchar *h_output = new uchar[imgByte];
+        uchar *h_output = output_mat.ptr<uchar>();
 
         uchar *d_input, *d_output, *d_kernel;
         checkError(cudaMalloc(&d_input, imgByte));
@@ -421,7 +423,7 @@ namespace GpuOperations
         checkError(cudaFree(d_output));
         checkError(cudaFree(d_kernel));
 
-        return cv::Mat(img.rows, img.cols, CV_8UC1, h_output);
+        return output_mat;
     }
 
     cv::Mat dilateImage(const Implementation i, const cv::Mat &img, const cv::Mat &kernel,
@@ -429,10 +431,11 @@ namespace GpuOperations
     {
         size_t imgByte = img.rows * img.cols * sizeof(uchar);
         size_t kernelBytes = kernel.rows * kernel.cols * sizeof(uchar);
+        cv::Mat output_mat(img.rows, img.cols, CV_8UC1);
 
         const uchar *h_input = img.ptr();
         const uchar *h_kernel = kernel.ptr();
-        uchar *h_output = new uchar[imgByte];
+        uchar *h_output = output_mat.ptr<uchar>();
 
         uchar *d_input, *d_output, *d_kernel;
         checkError(cudaMalloc(&d_input, imgByte));
@@ -468,7 +471,7 @@ namespace GpuOperations
         checkError(cudaFree(d_output));
         checkError(cudaFree(d_kernel));
 
-        return cv::Mat(img.rows, img.cols, CV_8UC1, h_output);
+        return output_mat;
     }
 
     cv::Mat openingImage(const Implementation i, const cv::Mat &img, const cv::Mat &kernel,
